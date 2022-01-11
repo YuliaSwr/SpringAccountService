@@ -1,45 +1,43 @@
 package app.service;
 
-
+import app.exception.UserExistException;
+import app.exception.UserNotExistException;
 import app.model.User;
 import app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Component;
 
-@Service
-public class UserService implements UserDetailsService {
+@Component
+public class UserService {
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
-    UserRepository userRepository;
-
-    @Override
-    public User loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByEmail(username);
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public void save(User user) {
-        userRepository.save(user);
-    }
-
-    public User findById(long id) {
-        return userRepository.findById(id);
-    }
-
-    public User findByUsername(String username) {
-        return userRepository.findByNameIgnoreCase(username);
+    public User findUserByEmail(String email) {
+        return userRepository.findUserByEmail(email);
     }
 
     public User findByEmail(String email) {
-        return userRepository.findByEmailIgnoreCase(email);
+        return userRepository.findByEmail(email).orElseThrow(UserNotExistException::new);
     }
 
-    public boolean existsByEmail(String email) {
-        return userRepository.existsByEmail(email);
-    }
 
-    public boolean existsByEmailIgnoreCase(String email) {
-        return userRepository.existsByEmailIgnoreCase(email);
+    public User save(User user) {
+        user.setEmail(user.getEmail().toLowerCase());
+        User optionalUser = userRepository.findUserByEmail(user.getEmail());
+        if (optionalUser != null) {
+            throw new UserExistException();
+        }
+
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole("ROLE_USER");
+        userRepository.save(user);
+        return user;
     }
 }
