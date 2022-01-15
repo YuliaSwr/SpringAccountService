@@ -1,6 +1,5 @@
 package app.controller;
 
-import app.model.NewPassword;
 import app.model.User;
 import app.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +30,7 @@ public class AuthenticationController {
 
     @PostMapping("/auth/changepass")
     public Map<String, String> changePassword(@AuthenticationPrincipal UserDetails userDetails,
-                                              @Valid @RequestBody NewPassword newPassword) {
-        return userService.changePassword(userDetails.getUsername().toLowerCase(), newPassword.getNew_password());
+                                              @Valid @RequestBody Map<String, String> requestMap) {
+        return userService.changePassword(userDetails.getUsername().toLowerCase(), requestMap.get("new_password"));
     }
 }
