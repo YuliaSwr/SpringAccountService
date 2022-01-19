@@ -7,6 +7,8 @@ import lombok.Data;
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
+import java.util.List;
 
 @Data
 @Entity
@@ -15,7 +17,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long Id;
+    private long id;
 
     @NotEmpty
     private String name;
@@ -28,11 +30,13 @@ public class User {
             message = "Invalid email")
     private String email;
 
+    @Column
     @NotEmpty
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @Size(min = 12)
     private String password;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     @JsonIgnore
-    private String role;
-
+    private List<Payment> payments;
 }

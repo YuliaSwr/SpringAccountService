@@ -5,27 +5,24 @@ import app.model.User;
 import app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Map;
 
-@Component
+@Service
 public class UserService {
-    private final UserRepository userRepository;
-    private final BCryptPasswordEncoder passwordEncoder;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     private ArrayList<String> hackPasswords = new ArrayList<String>(Arrays.asList("PasswordForJanuary", "PasswordForFebruary", "PasswordForMarch", "PasswordForApril",
             "PasswordForMay", "PasswordForJune", "PasswordForJuly", "PasswordForAugust",
             "PasswordForSeptember", "PasswordForOctober", "PasswordForNovember", "PasswordForDecember"));
 
-
-    @Autowired
-    public UserService(UserRepository userRepository, BCryptPasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     public User findByEmail(String email) {
         return userRepository.findByEmail(email).orElseThrow(UserException::new);
@@ -47,12 +44,11 @@ public class UserService {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRole("ROLE_USER");
         userRepository.save(user);
         return user;
     }
 
-    public Map<String, String> changePassword(String username, String newPassword) {
+    public void changePassword(String username, String newPassword) {
         User user = findByEmail(username);
 
         if (newPassword.length() < 12) {
@@ -70,8 +66,5 @@ public class UserService {
         userRepository.delete(user);
         user.setPassword(newPassword);
         save(user);
-
-        return Map.of("email", user.getEmail(),
-                "status", "The password has been updated successfully");
     }
 }
