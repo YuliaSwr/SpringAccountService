@@ -1,6 +1,5 @@
 package app.service;
 
-import app.exception.UserException;
 import app.model.Payment;
 import app.model.PaymentResponse;
 import app.model.User;
@@ -43,7 +42,7 @@ public class PaymentService {
         User user = userService.findByEmail(email);
         Payment payment = paymentRepository.findPaymentByEmployeeAndPeriod(email.toLowerCase(), period);
         if (payment == null) {
-            throw new UserException("We don`t have info about this period");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "We don`t have info about this period");
         }
         return new PaymentResponse(
                 user.getName(),
@@ -55,7 +54,7 @@ public class PaymentService {
     public void saveAll(List<Payment> payments) {
         for (Payment payment : payments) {
             if (paymentRepository.existsByEmployeeAndPeriod(payment.getEmployee(), payment.getPeriod())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The period of " + payment.getPeriod() + " is already exist for " + payment.getEmployee());
             } else {
                 save(payment);
             }
@@ -63,21 +62,30 @@ public class PaymentService {
     }
 
     public void save(Payment payment) {
-        if (!checkPeriod(payment.getPeriod())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
-        }
+        validatePayment(payment);
         payment.setUser(userService.findByEmail(payment.getEmployee()));
         paymentRepository.save(payment);
     }
 
 
     public void updatePayment(Payment payment) {
+        validatePayment(payment);
         paymentRepository.delete(paymentRepository.findPaymentByEmployeeAndPeriod(payment.getEmployee(), payment.getPeriod()));
-        save(payment);
+        payment.setUser(userService.findByEmail(payment.getEmployee()));
+        paymentRepository.save(payment);
+    }
+
+    public void validatePayment(Payment payment) {
+        if (!checkPeriod(payment.getPeriod())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Wrong period in payment!");
+        }
+        if (payment.getSalary() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Wrong salary in payment!");
+        }
     }
 
     public boolean checkPeriod(String period) {
-        try{
+        try {
             YearMonth.parse(period, DateTimeFormatter.ofPattern("MM-yyyy"));
             return true;
         } catch (DateTimeParseException ex) {

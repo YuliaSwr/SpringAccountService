@@ -10,6 +10,7 @@ import lombok.Setter;
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
 @Entity
@@ -23,13 +24,16 @@ public class Payment {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private long id;
 
+    @NotNull
     @Email(regexp = "[a-zA-Z0-9]+@acme.com")
     private String employee;
 
     @NotBlank
+    @NotNull
     @Pattern(regexp = "^0[1-9]-\\d{4}$|^(1[012])-\\d{4}$")
     private String period;
 
+    @NotNull
     private long salary;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

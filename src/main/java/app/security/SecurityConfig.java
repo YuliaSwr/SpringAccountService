@@ -1,5 +1,7 @@
 package app.security;
 
+
+import app.exception.CustomAccessDeniedHandler;
 import app.exception.RestAuthenticationEntryPoint;
 import app.service.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,6 +15,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
@@ -23,6 +26,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     UserDetailsServiceImpl userDetailsService;
 
+    @Autowired
+    private CustomAccessDeniedHandler accessDeniedHandler;
+
+
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         auth.authenticationProvider(authenticationProvider());
@@ -30,21 +37,20 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
-        http.httpBasic()
-                .authenticationEntryPoint(restAuthenticationEntryPoint) // Handle auth error
-                .and()
-                .csrf().disable().headers().frameOptions().disable()
-                .and()
-                .authorizeRequests() // manage access
-                .mvcMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
-                .mvcMatchers(HttpMethod.POST, "/api/auth/changepass").authenticated()
-                .mvcMatchers(HttpMethod.POST, "/api/acct/payments").permitAll()
-                .mvcMatchers(HttpMethod.PUT, "/api/acct/payments").permitAll()
-                .mvcMatchers(HttpMethod.GET, "/api/empl/payment").authenticated()
-                // other matchers
-                .and()
-                .sessionManagement()
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS); // no session
+        http.authorizeRequests()
+                .mvcMatchers("api/admin/**")
+                .hasAnyRole("ADMINISTRATOR")
+                .mvcMatchers("api/acct/**")
+                .hasAnyRole("ACCOUNTANT")
+                .mvcMatchers("api/empl/**")
+                .hasAnyRole("ACCOUNTANT", "USER")
+                .mvcMatchers("api/auth/changepass")
+                .authenticated()
+                .anyRequest()
+                .permitAll();
+        http.exceptionHandling().accessDeniedHandler(accessDeniedHandler);
+        http.httpBasic();
+        http.csrf().disable().headers().frameOptions().disable();
     }
 
     @Bean
@@ -67,3 +73,4 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         return new UserDetailsServiceImpl();
     }
 }
+
